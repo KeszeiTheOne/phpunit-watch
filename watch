@@ -1,0 +1,96 @@
+#!/usr/bin/env php
+<?php declare(strict_types=1);
+
+use Dimsh\React\Filesystem\Monitor\Monitor;
+use Dimsh\React\Filesystem\Monitor\MonitorConfigurator;
+
+if (isset($GLOBALS['_composer_autoload_path'])) {
+	define('PHPUNIT_COMPOSER_INSTALL', $GLOBALS['_composer_autoload_path']);
+
+	unset($GLOBALS['_composer_autoload_path']);
+} else {
+	foreach ([
+				 __DIR__ . '/../../autoload.php',
+				 __DIR__ . '/../vendor/autoload.php',
+				 __DIR__ . '/vendor/autoload.php',
+			 ] as $file) {
+		if (file_exists($file)) {
+			define('PHPUNIT_COMPOSER_INSTALL', $file);
+
+			break;
+		}
+	}
+
+	unset($file);
+}
+require PHPUNIT_COMPOSER_INSTALL;
+
+
+die;
+$tests = __DIR__ . '/tests';
+$dir = __DIR__ . '/src';
+$listPhpFiles = \Watcher\ListFiles\ListFiles::listPhpFiles($tests);
+$count = count($listPhpFiles);
+$done = 0;
+$result = [];
+foreach ($listPhpFiles as $listPhpFile) {
+	$includes = \Watcher\GetPhpFileIncludes\GetPhpFileIncludes::getPhpFileIncludes(__DIR__, $listPhpFile);
+
+	$result[$listPhpFile] = $includes;
+	$done += 1;
+	\Watcher\StatusBar::show($done, $count);
+}
+var_dump($result);
+die;
+
+
+$monitor = new Monitor(MonitorConfigurator::factory()
+										  ->setLevel(0)
+										  ->setFilesToMonitor([
+											  '*.php',
+										  ])
+										  ->setBaseDirectory(__DIR__));
+$monitor
+	->on(Monitor::EV_CREATE, function ($path, $monitor)
+	{
+		echo "created:   $path\n";
+	})
+	->on(Monitor::EV_MODIFY, function ($path, $monitor) use ($result)
+	{
+		if (isset($result[$path])) {
+			try {
+				(new PHPUnit\TextUI\Command())->run(['--filter' => $path], false);
+			} catch (Exception $exception) {
+
+			}
+		} else {
+			foreach ($result as $key => $files) {
+                var_dump($files);
+				if (in_array($path, $files)) {
+					try {
+						var_dump("qweqwe");
+						(new PHPUnit\TextUI\Command())->run(['--filter' => $key], false);
+					} catch (Exception $exception) {
+
+					}
+				}
+			}
+		}
+		echo "modified:  $path\n";
+	})
+	->on(Monitor::EV_DELETE, function ($path, $monitor)
+	{
+		echo "deleted:   $path\n";
+	})
+	->run();
+
+//\Watcher\Watch::path(__DIR__ . '/src')
+//	->onAnyChange(function (string $type, string $path) {
+////		if ($type === \Watcher\Watch::EVENT_TYPE_FILE_CREATED) {
+////		}
+//			echo "file {$path} was changed";
+//	})
+//	->start();;
+//$files = Watcher\ListFiles\ListFiles::listPhpFiles(__DIR__);
+//
+//print_r($files);
