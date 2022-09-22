@@ -19,8 +19,8 @@ class GetPhpFileIncludesTest extends TestCase {
 	 */
 	public function getPhpSelfFileIncludes() {
 		$this->assertSame([
-			$this->path('/foo.php'),
-		], $this->getIncludes($this->path('/foo.php')));
+			$this->path('/testIncludes/a/b/Foo.php'),
+		], $this->getIncludes($this->path('/testIncludes/a/b/Foo.php')));
 	}
 
 	/**
@@ -28,9 +28,9 @@ class GetPhpFileIncludesTest extends TestCase {
 	 */
 	public function getPhpFileIncludes() {
 		$this->assertSame([
-			$this->path('/bazz.php'),
-			$this->path('/foo.php'),
-		], $this->getIncludes($this->path('/bazz.php')));
+			$this->path('/testIncludes/a/Bazz.php'),
+			$this->path('/testIncludes/a/b/Foo.php'),
+		], $this->getIncludes($this->path('/testIncludes/a/Bazz.php')));
 	}
 
 	/**
@@ -38,14 +38,35 @@ class GetPhpFileIncludesTest extends TestCase {
 	 */
 	public function getPhpFileChildIncludes() {
 		$this->assertSame([
-			$this->path('/apple.php'),
-			$this->path('/bazz.php'),
-			$this->path('/foo.php'),
-		], $this->getIncludes($this->path('/apple.php')));
+			$this->path('/testIncludes/Apple.php'),
+			$this->path('/testIncludes/a/Bazz.php'),
+			$this->path('/testIncludes/a/b/Foo.php'),
+		], $this->getIncludes($this->path('/testIncludes/Apple.php')));
+	}
+
+	/**
+	 * @test
+	 */
+	public function excludeUseNames() {
+		$this->assertSame([
+			$this->path('/exclude/ExcludeUseNames.php'),
+			$this->path('/testIncludes/a/b/Foo.php'),
+		], $this->getIncludes($this->path('/exclude/ExcludeUseNames.php')));
+	}
+
+	/**
+	 * @test
+	 */
+	public function excludeSameFile() {
+		$this->assertSame([
+			$this->path('/exclude/ExcludeExistImport.php'),
+			$this->path('/testIncludes/a/b/Foo.php'),
+			$this->path('/testIncludes/a/Bazz.php'),
+		], $this->getIncludes($this->path('/exclude/ExcludeExistImport.php')));
 	}
 
 	private function getIncludes($filePath): array {
-		return GetPhpFileIncludes::getPhpFileIncludes(realpath(__DIR__ . '/../..'), $filePath);
+		return GetPhpFileIncludes::getPhpFileIncludes($filePath);
 	}
 
 	private function path($path): string {

@@ -1,5 +1,5 @@
 #!/usr/bin/env php
-<?php declare(strict_types=1);
+<?php
 
 use Dimsh\React\Filesystem\Monitor\Monitor;
 use Dimsh\React\Filesystem\Monitor\MonitorConfigurator;
@@ -23,26 +23,56 @@ if (isset($GLOBALS['_composer_autoload_path'])) {
 
 	unset($file);
 }
+//var_dump($_SERVER['argv']);
+//die;
 require PHPUNIT_COMPOSER_INSTALL;
-
-
-die;
+//$resource = inotify_init();
+//$phpFiles = \Watcher\ListFiles\ListFiles::listPhpFiles(__DIR__ . '/src');
+//$watchers = [];
+//foreach ($phpFiles as $phpFile) {
+//	$watchers[$phpFile] = inotify_add_watch($resource, $phpFile, IN_MODIFY);
+//
+//}
+////die;
+//while (true) {
+//	$events = inotify_read($resource);
+//	var_dump($events);
+//}
+//
+//
+//die;
 $tests = __DIR__ . '/tests';
 $dir = __DIR__ . '/src';
 $listPhpFiles = \Watcher\ListFiles\ListFiles::listPhpFiles($tests);
 $count = count($listPhpFiles);
 $done = 0;
-$result = [];
+$testFiles = [];
+$sourceFiles = [];
 foreach ($listPhpFiles as $listPhpFile) {
-	$includes = \Watcher\GetPhpFileIncludes\GetPhpFileIncludes::getPhpFileIncludes(__DIR__, $listPhpFile);
+	$includes = \Watcher\GetPhpFileIncludes\GetPhpFileIncludes::getPhpFileIncludes($listPhpFile);
 
-	$result[$listPhpFile] = $includes;
+	if (!isset($testFiles[$listPhpFile])) {
+		$testFiles[$listPhpFile] = [];
+	}
+	foreach ($includes as $include) {
+		$testFiles[$listPhpFile][] = $include;
+		if (!isset($sourceFiles[$include])) {
+			$sourceFiles[$include] = [];
+		}
+		$sourceFiles[$include] = $listPhpFile;
+	}
 	$done += 1;
 	\Watcher\StatusBar::show($done, $count);
 }
-var_dump($result);
-die;
+//var_dump($result);
+//die;
+$phpunit = \Watcher\ListFiles\ListFiles::listFiles(__DIR__ . '/vendor', '/phpunit$/');
+//var_dump($phpunit);
+//if (count($phpunit) !== 1) {
+//	die("x");
+//}
 
+$phpunit = $phpunit[0];
 
 $monitor = new Monitor(MonitorConfigurator::factory()
 										  ->setLevel(0)
@@ -50,31 +80,34 @@ $monitor = new Monitor(MonitorConfigurator::factory()
 											  '*.php',
 										  ])
 										  ->setBaseDirectory(__DIR__));
+system('clear');
 $monitor
 	->on(Monitor::EV_CREATE, function ($path, $monitor)
 	{
 		echo "created:   $path\n";
 	})
-	->on(Monitor::EV_MODIFY, function ($path, $monitor) use ($result)
+	->on(Monitor::EV_MODIFY, function ($path, $monitor) use ($phpunit, $testFiles, $sourceFiles)
 	{
-		if (isset($result[$path])) {
-			try {
-				(new PHPUnit\TextUI\Command())->run(['--filter' => $path], false);
-			} catch (Exception $exception) {
 
-			}
-		} else {
-			foreach ($result as $key => $files) {
-                var_dump($files);
-				if (in_array($path, $files)) {
-					try {
-						var_dump("qweqwe");
-						(new PHPUnit\TextUI\Command())->run(['--filter' => $key], false);
-					} catch (Exception $exception) {
+		if (isset($testFiles[$path])) {
+			$arguments = array_shift($_SERVER['argv']) || [];
+			$arguments[] = $path;
 
-					}
-				}
-			}
+			$arguments = implode(" ", $arguments);
+			system('clear');
+			system("$phpunit $arguments");
+//			flush();
+		} else if (isset($sourceFiles[$path])) {
+
+			$arguments = $_SERVER['argv'];
+			unset($arguments[0]);
+			$arguments[] = $sourceFiles[$path];
+			$arguments = implode(" ", $arguments);
+
+			system('clear');
+			system("$phpunit $arguments");
+//			flush();
+
 		}
 		echo "modified:  $path\n";
 	})
