@@ -10,10 +10,10 @@ if (isset($GLOBALS['_composer_autoload_path'])) {
 	unset($GLOBALS['_composer_autoload_path']);
 } else {
 	foreach ([
-				 __DIR__ . '/../../autoload.php',
-				 __DIR__ . '/../vendor/autoload.php',
-				 __DIR__ . '/vendor/autoload.php',
-			 ] as $file) {
+		         getcwd() . '/../../autoload.php',
+		         getcwd() . '/../vendor/autoload.php',
+		         getcwd() . '/vendor/autoload.php',
+	         ] as $file) {
 		if (file_exists($file)) {
 			define('PHPUNIT_COMPOSER_INSTALL', $file);
 
@@ -23,27 +23,26 @@ if (isset($GLOBALS['_composer_autoload_path'])) {
 
 	unset($file);
 }
-//var_dump($_SERVER['argv']);
-//die;
+
 require PHPUNIT_COMPOSER_INSTALL;
-//$resource = inotify_init();
-//$phpFiles = \Watcher\ListFiles\ListFiles::listPhpFiles(__DIR__ . '/src');
-//$watchers = [];
-//foreach ($phpFiles as $phpFile) {
-//	$watchers[$phpFile] = inotify_add_watch($resource, $phpFile, IN_MODIFY);
-//
-//}
-////die;
-//while (true) {
-//	$events = inotify_read($resource);
-//	var_dump($events);
-//}
-//
-//
-//die;
-$tests = __DIR__ . '/tests';
-$dir = __DIR__ . '/src';
+$phpunit = \Watcher\ListFiles\ListFiles::listFiles(getcwd() . '/vendor', '/phpunit$/');
+
+
+$phpunit = $phpunit[0];
+
+if (!in_array('--watch', $_SERVER['argv'])) {
+	$arguments = [];
+	for ($i = 1; $i < count($_SERVER['argv']); $i++) {
+		$arguments[] = escapeshellarg($_SERVER['argv'][$i]);
+	}
+
+	system($phpunit . ' ' . implode(' ', $arguments));
+	exit();
+}
+$tests = getcwd() . '/tests';
+$dir = getcwd() . '/src';
 $listPhpFiles = \Watcher\ListFiles\ListFiles::listPhpFiles($tests);
+
 $count = count($listPhpFiles);
 $done = 0;
 $testFiles = [];
@@ -62,51 +61,48 @@ foreach ($listPhpFiles as $listPhpFile) {
 		$sourceFiles[$include] = $listPhpFile;
 	}
 	$done += 1;
-	\Watcher\StatusBar::show($done, $count);
+//	\Watcher\StatusBar::show($done, $count);
 }
-//var_dump($result);
-//die;
-$phpunit = \Watcher\ListFiles\ListFiles::listFiles(__DIR__ . '/vendor', '/phpunit$/');
-//var_dump($phpunit);
-//if (count($phpunit) !== 1) {
-//	die("x");
-//}
-
-$phpunit = $phpunit[0];
 
 $monitor = new Monitor(MonitorConfigurator::factory()
-										  ->setLevel(0)
-										  ->setFilesToMonitor([
-											  '*.php',
-										  ])
-										  ->setBaseDirectory(__DIR__));
-system('clear');
+                                          ->setLevel(0)
+                                          ->setFilesToMonitor([
+	                                          '*.php',
+                                          ])
+                                          ->setBaseDirectory(getcwd()));
+
+function runTest($phpunit, $path) {
+	$arguments = [escapeshellarg($path)];
+	for ($i = 1; $i < count($_SERVER['argv']); $i++) {
+		$var = $_SERVER['argv'][$i];
+		if ($var === '--watch') {
+			continue;
+		}
+		$arguments[] = escapeshellarg($var);
+	}
+	$isTeamCity = in_array('--teamcity', $_SERVER['argv']);
+	$arguments = implode(" ", $arguments);
+	if ($isTeamCity) {
+		system('echo "##teamcity[testingStarted]"');
+	} else {
+		system('clear');
+	}
+	system("$phpunit $arguments");
+	if ($isTeamCity) {
+		system('echo "##teamcity[testingFinished]"');
+	}
+}
+
 $monitor
-	->on(Monitor::EV_CREATE, function ($path, $monitor)
-	{
+	->on(Monitor::EV_CREATE, function ($path, $monitor) {
 		echo "created:   $path\n";
 	})
-	->on(Monitor::EV_MODIFY, function ($path, $monitor) use ($phpunit, $testFiles, $sourceFiles)
-	{
+	->on(Monitor::EV_MODIFY, function ($path, $monitor) use ($phpunit, $testFiles, $sourceFiles) {
 
 		if (isset($testFiles[$path])) {
-			$arguments = array_shift($_SERVER['argv']) || [];
-			$arguments[] = $path;
-
-			$arguments = implode(" ", $arguments);
-			system('clear');
-			system("$phpunit $arguments");
-//			flush();
+			runTest($phpunit, $path);
 		} else if (isset($sourceFiles[$path])) {
-
-			$arguments = $_SERVER['argv'];
-			unset($arguments[0]);
-			$arguments[] = $sourceFiles[$path];
-			$arguments = implode(" ", $arguments);
-
-			system('clear');
-			system("$phpunit $arguments");
-//			flush();
+			runTest($phpunit, $sourceFiles[$path]);
 
 		}
 		echo "modified:  $path\n";
