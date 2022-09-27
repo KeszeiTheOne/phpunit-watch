@@ -1,12 +1,8 @@
 # phpunit-watch
 
----
-
 This library provide a function for automatically run phpunit test while file changes.
 
 ## Getting Started
-
----
 
 You need to install before the [phpunit](https://phpunit.de/) to your project.
 I tested with phpunit >=7 version, but maybe it works with older ones too. 
