@@ -1,16 +1,16 @@
 #!/usr/bin/env php
 <?php
 
-use Dimsh\React\Filesystem\Monitor\Monitor;
-use Dimsh\React\Filesystem\Monitor\MonitorConfigurator;
-use Watcher\Listeners\TestRunnerFileChangerListener;
-
 if (isset($GLOBALS['_composer_autoload_path'])) {
 	define('PHPUNIT_COMPOSER_INSTALL', $GLOBALS['_composer_autoload_path']);
 
 	unset($GLOBALS['_composer_autoload_path']);
 } else {
-	foreach (array(__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php') as $file) {
+	foreach ([
+				 __DIR__ . '/../../autoload.php',
+				 __DIR__ . '/../vendor/autoload.php',
+				 __DIR__ . '/vendor/autoload.php',
+			 ] as $file) {
 		if (file_exists($file)) {
 			define('PHPUNIT_COMPOSER_INSTALL', $file);
 
@@ -32,6 +32,23 @@ if (!defined('PHPUNIT_COMPOSER_INSTALL')) {
 	die(1);
 }
 
+foreach ([__DIR__ . '/tests', __DIR__ . '/../tests', __DIR__ . '/../../tests'] as $testDirectory) {
+	if (is_dir($testDirectory)) {
+		define('PHPUNIT_WATCHER_TEST_DIRECTORY', $testDirectory);
+
+		break;
+	}
+}
+
+if (!defined('PHPUNIT_WATCHER_TEST_DIRECTORY')) {
+	fwrite(
+		STDERR,
+		'You need to set up the project with test folder:' . PHP_EOL . PHP_EOL .
+		'    mkdir tests' . PHP_EOL . PHP_EOL);
+
+	die(1);
+}
+
 require PHPUNIT_COMPOSER_INSTALL;
 
 if (!\Composer\InstalledVersions::isInstalled('phpunit/phpunit')) {
@@ -39,33 +56,4 @@ if (!\Composer\InstalledVersions::isInstalled('phpunit/phpunit')) {
 }
 
 $phpunit = \Composer\InstalledVersions::getInstallPath('phpunit/phpunit') . '/phpunit';
-$testRunner = new \Watcher\TestRunner($phpunit, $_SERVER['argv']);
-if (!in_array('--watch', $_SERVER['argv'])) {
-	$testRunner->runTest();
-	exit();
-}
-$tests = getcwd() . '/tests';
-$dir = getcwd() . '/src';
-
-$done = 0;
-$iterator = new \Watcher\FileIncludesIterator();
-foreach (\Watcher\ListFiles\ListFiles::listPhpFiles($tests) as $listPhpFile) {
-	$iterator->addFile($listPhpFile);
-}
-
-$monitor = new Monitor(MonitorConfigurator::factory()
-                                          ->setLevel(0)
-                                          ->setFilesToMonitor([
-	                                          '*.php',
-                                          ])
-                                          ->setBaseDirectory(getcwd()));
-
-$changeListener = new TestRunnerFileChangerListener($iterator, $testRunner);
-
-$monitor
-	->on(Monitor::EV_CREATE, [$changeListener, 'onCreate'])
-	->on(Monitor::EV_MODIFY, [$changeListener, 'onChange'])
-	->on(Monitor::EV_DELETE, function ($path, $monitor) {
-		echo "deleted:   $path\n";
-	})
-	->run();
+\Watcher\TextUI\Command::main($phpunit);
