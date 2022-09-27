@@ -3,17 +3,14 @@
 
 use Dimsh\React\Filesystem\Monitor\Monitor;
 use Dimsh\React\Filesystem\Monitor\MonitorConfigurator;
+use Watcher\Listeners\TestRunnerFileChangerListener;
 
 if (isset($GLOBALS['_composer_autoload_path'])) {
 	define('PHPUNIT_COMPOSER_INSTALL', $GLOBALS['_composer_autoload_path']);
 
 	unset($GLOBALS['_composer_autoload_path']);
 } else {
-	foreach ([
-		         getcwd() . '/../../autoload.php',
-		         getcwd() . '/../vendor/autoload.php',
-		         getcwd() . '/vendor/autoload.php',
-	         ] as $file) {
+	foreach (array(__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php') as $file) {
 		if (file_exists($file)) {
 			define('PHPUNIT_COMPOSER_INSTALL', $file);
 
@@ -24,44 +21,36 @@ if (isset($GLOBALS['_composer_autoload_path'])) {
 	unset($file);
 }
 
+if (!defined('PHPUNIT_COMPOSER_INSTALL')) {
+	fwrite(
+		STDERR,
+		'You need to set up the project dependencies using Composer:' . PHP_EOL . PHP_EOL .
+		'    composer install' . PHP_EOL . PHP_EOL .
+		'You can learn all about Composer on https://getcomposer.org/.' . PHP_EOL
+	);
+
+	die(1);
+}
+
 require PHPUNIT_COMPOSER_INSTALL;
-$phpunit = \Watcher\ListFiles\ListFiles::listFiles(getcwd() . '/vendor', '/phpunit$/');
 
+if (!\Composer\InstalledVersions::isInstalled('phpunit/phpunit')) {
+	throw new RuntimeException();
+}
 
-$phpunit = $phpunit[0];
-
+$phpunit = \Composer\InstalledVersions::getInstallPath('phpunit/phpunit') . '/phpunit';
+$testRunner = new \Watcher\TestRunner($phpunit, $_SERVER['argv']);
 if (!in_array('--watch', $_SERVER['argv'])) {
-	$arguments = [];
-	for ($i = 1; $i < count($_SERVER['argv']); $i++) {
-		$arguments[] = escapeshellarg($_SERVER['argv'][$i]);
-	}
-
-	system($phpunit . ' ' . implode(' ', $arguments));
+	$testRunner->runTest();
 	exit();
 }
 $tests = getcwd() . '/tests';
 $dir = getcwd() . '/src';
-$listPhpFiles = \Watcher\ListFiles\ListFiles::listPhpFiles($tests);
 
-$count = count($listPhpFiles);
 $done = 0;
-$testFiles = [];
-$sourceFiles = [];
-foreach ($listPhpFiles as $listPhpFile) {
-	$includes = \Watcher\GetPhpFileIncludes\GetPhpFileIncludes::getPhpFileIncludes($listPhpFile);
-
-	if (!isset($testFiles[$listPhpFile])) {
-		$testFiles[$listPhpFile] = [];
-	}
-	foreach ($includes as $include) {
-		$testFiles[$listPhpFile][] = $include;
-		if (!isset($sourceFiles[$include])) {
-			$sourceFiles[$include] = [];
-		}
-		$sourceFiles[$include] = $listPhpFile;
-	}
-	$done += 1;
-//	\Watcher\StatusBar::show($done, $count);
+$iterator = new \Watcher\FileIncludesIterator();
+foreach (\Watcher\ListFiles\ListFiles::listPhpFiles($tests) as $listPhpFile) {
+	$iterator->addFile($listPhpFile);
 }
 
 $monitor = new Monitor(MonitorConfigurator::factory()
@@ -71,55 +60,12 @@ $monitor = new Monitor(MonitorConfigurator::factory()
                                           ])
                                           ->setBaseDirectory(getcwd()));
 
-function runTest($phpunit, $path) {
-	$arguments = [escapeshellarg($path)];
-	for ($i = 1; $i < count($_SERVER['argv']); $i++) {
-		$var = $_SERVER['argv'][$i];
-		if ($var === '--watch') {
-			continue;
-		}
-		$arguments[] = escapeshellarg($var);
-	}
-	$isTeamCity = in_array('--teamcity', $_SERVER['argv']);
-	$arguments = implode(" ", $arguments);
-	if ($isTeamCity) {
-		system('echo "##teamcity[testingStarted]"');
-	} else {
-		system('clear');
-	}
-	system("$phpunit $arguments");
-	if ($isTeamCity) {
-		system('echo "##teamcity[testingFinished]"');
-	}
-}
+$changeListener = new TestRunnerFileChangerListener($iterator, $testRunner);
 
 $monitor
-	->on(Monitor::EV_CREATE, function ($path, $monitor) {
-		echo "created:   $path\n";
-	})
-	->on(Monitor::EV_MODIFY, function ($path, $monitor) use ($phpunit, $testFiles, $sourceFiles) {
-
-		if (isset($testFiles[$path])) {
-			runTest($phpunit, $path);
-		} else if (isset($sourceFiles[$path])) {
-			runTest($phpunit, $sourceFiles[$path]);
-
-		}
-		echo "modified:  $path\n";
-	})
-	->on(Monitor::EV_DELETE, function ($path, $monitor)
-	{
+	->on(Monitor::EV_CREATE, [$changeListener, 'onCreate'])
+	->on(Monitor::EV_MODIFY, [$changeListener, 'onChange'])
+	->on(Monitor::EV_DELETE, function ($path, $monitor) {
 		echo "deleted:   $path\n";
 	})
 	->run();
-
-//\Watcher\Watch::path(__DIR__ . '/src')
-//	->onAnyChange(function (string $type, string $path) {
-////		if ($type === \Watcher\Watch::EVENT_TYPE_FILE_CREATED) {
-////		}
-//			echo "file {$path} was changed";
-//	})
-//	->start();;
-//$files = Watcher\ListFiles\ListFiles::listPhpFiles(__DIR__);
-//
-//print_r($files);

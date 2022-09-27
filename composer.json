@@ -2,10 +2,22 @@
   "name": "keszei/phpunit-watcher",
   "type": "library",
   "license": "MIT",
-  "description": "Run phpunit project test while file changes",
+  "description": "Run phpunit project test while file changes.",
+  "keywords": [
+    "dev",
+    "phpunit",
+    "testing",
+    "tdd"
+  ],
+  "readme": "README.md",
+  "bin": "watch",
   "autoload": {
     "psr-4": {
-      "Watcher\\": "src/",
+      "Watcher\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
       "Tests\\Watcher\\": "tests/"
     }
   },
@@ -24,6 +36,5 @@
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5"
-  },
-  "bin": "watch"
+  }
 }

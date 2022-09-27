@@ -53,7 +53,6 @@ class ListFilesTest extends TestCase {
 	 * @test
 	 */
 	public function excludeFilesWithRegex() {
-
 		$this->assertSame([
 			$this->path("/exclude/keep.xml"),
 			$this->path("/exclude/sub/keep2.xml"),
