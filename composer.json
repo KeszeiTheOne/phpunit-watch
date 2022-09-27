@@ -10,7 +10,7 @@
     "tdd"
   ],
   "readme": "README.md",
-  "bin": "watch",
+  "bin": "phpunit-watch",
   "autoload": {
     "psr-4": {
       "Watcher\\": "src/"
