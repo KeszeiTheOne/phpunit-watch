@@ -28,7 +28,11 @@ class GetPhpFileIncludes {
 
 			fclose($handle);
 			foreach ($imports as $import) {
-				$reflectionClass = new ReflectionClass($import);
+				try {
+					$reflectionClass = new ReflectionClass($import);
+				} catch (\Throwable $exception) {
+					continue;
+				}
 				$fileName = $reflectionClass->getFileName();
 				if ($fileName && !preg_match('/\/vendor\//', $fileName)) {
 					if (!preg_match('/\/vendor\//', $fileName)) {

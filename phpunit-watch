@@ -32,7 +32,7 @@ if (!defined('PHPUNIT_COMPOSER_INSTALL')) {
 	die(1);
 }
 
-foreach ([__DIR__ . '/tests', __DIR__ . '/../tests', __DIR__ . '/../../tests'] as $testDirectory) {
+foreach ([getcwd() . '/tests', getcwd() . '/../tests', getcwd() . '/../../tests'] as $testDirectory) {
 	if (is_dir($testDirectory)) {
 		define('PHPUNIT_WATCHER_TEST_DIRECTORY', $testDirectory);
 
