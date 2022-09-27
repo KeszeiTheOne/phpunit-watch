@@ -14,13 +14,15 @@
   "autoload": {
     "psr-4": {
       "Watcher\\": "src/"
-    },
-    "exclude-from-classmap": ["/Tests/", "/test/", "/tests/"]
+    }
   },
   "autoload-dev": {
     "psr-4": {
       "Tests\\Watcher\\": "tests/"
     }
+  },
+  "archive": {
+    "exclude": ["/tests"]
   },
   "authors": [
     {
