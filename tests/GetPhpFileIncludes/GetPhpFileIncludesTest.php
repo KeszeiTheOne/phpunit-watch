@@ -65,6 +65,17 @@ class GetPhpFileIncludesTest extends TestCase {
 		], $this->getIncludes($this->path('/exclude/ExcludeExistImport.php')));
 	}
 
+	/**
+	 * @test
+	 * @timeoutForSmallTests
+	 */
+	public function excludeEndlessFileIncludes() {
+		$this->assertSame([
+			$this->path('/endless/EndlessA.php'),
+			$this->path('/endless/sub/EndlessB.php'),
+		], $this->getIncludes($this->path('/endless/EndlessA.php')));
+	}
+
 	private function getIncludes($filePath): array {
 		return GetPhpFileIncludes::getPhpFileIncludes($filePath);
 	}
