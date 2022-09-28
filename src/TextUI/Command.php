@@ -2,10 +2,9 @@
 
 namespace Watcher\TextUI;
 
-
-use Dimsh\React\Filesystem\Monitor\Monitor;
-use Dimsh\React\Filesystem\Monitor\MonitorConfigurator;
 use Exception;
+use MKraemer\ReactInotify\Inotify;
+use React\EventLoop\Factory;
 use RuntimeException;
 use Throwable;
 use Watcher\FileIncludesIterator;
@@ -41,19 +40,18 @@ class Command {
 		foreach (ListFiles::listPhpFiles($tests) as $listPhpFile) {
 			$iterator->addFile($listPhpFile);
 		}
-
-		$monitor = new Monitor(MonitorConfigurator::factory()
-												  ->setLevel(0)
-												  ->setFilesToMonitor([
-													  '*.php',
-												  ])
-												  ->setBaseDirectory(getcwd()));
-
+		$loop = Factory::create();
+		$inotify = new Inotify($loop);
+		foreach (ListFiles::listFiles(getcwd() . "/src") as $file) {
+			$inotify->add($file, IN_MODIFY | IN_CLOSE_WRITE);
+		}
+		foreach (ListFiles::listFiles(getcwd() . "/tests") as $file) {
+			$inotify->add($file, IN_MODIFY | IN_CLOSE_WRITE);
+		}
 		$changeListener = new TestRunnerFileChangerListener($iterator, $testRunner);
+		$inotify->on(IN_CLOSE_WRITE, [$changeListener, "onChange"]);
 
-		$monitor
-			->on(Monitor::EV_MODIFY, [$changeListener, 'onChange'])
-			->run();
+		$loop->run();
 	}
 
 }

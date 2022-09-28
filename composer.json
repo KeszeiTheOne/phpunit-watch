@@ -35,7 +35,7 @@
     "ext-json": "*",
     "ext-inotify": "*",
     "symfony/process": "^5.2|^6.0",
-    "idimsh/php-inotify-monitor": "dev-master"
+    "mkraemer/react-inotify": "^1.1"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5"

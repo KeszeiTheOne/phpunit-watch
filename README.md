@@ -8,6 +8,12 @@ You need to install before the [phpunit](https://phpunit.de/) to your project.
 I tested with phpunit >=7 version, but maybe it works with older ones too. 
 The script look for in your project the phpunit and use too.
 
+## Requirements
+* PHP >= 7.3
+* inotify php extension
+* Linux like system where inotify extension is available
+* phpunit/phpunit composer package
+
 ### Prerequisites
 
 You need to install phpunit library.

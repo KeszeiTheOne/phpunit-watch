@@ -24,11 +24,11 @@ class TestRunnerFileChangerListener {
 	}
 
 
-	public function onCreate($path, $monitor) {
+	public function onCreate($path) {
 		$this->files->addFile($path);
 	}
 
-	public function onChange($path, $monitor) {
+	public function onChange($path) {
 		if (isset($this->files[$path])) {
 			$this->testRunner->runTest($this->files[$path]);
 		}

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "54dfa128b067c07e9387c78a85b9dfc6",
+    "content-hash": "252c4d52911e5713954c51a0a452db1a",
     "packages": [
         {
             "name": "evenement/evenement",
@@ -57,61 +57,6 @@
                 "source": "https://github.com/igorw/evenement/tree/master"
             },
             "time": "2017-07-17T17:39:19+00:00"
-        },
-        {
-            "name": "idimsh/php-inotify-monitor",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/idimsh/php-inotify-monitor.git",
-                "reference": "d36f02b4efc00589b9b57488ede593f6c55291ee"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/idimsh/php-inotify-monitor/zipball/d36f02b4efc00589b9b57488ede593f6c55291ee",
-                "reference": "d36f02b4efc00589b9b57488ede593f6c55291ee",
-                "shasum": ""
-            },
-            "require": {
-                "mkraemer/react-inotify": "1.1.0",
-                "php": ">=7.1"
-            },
-            "require-dev": {
-                "phpunit/phpunit": ">= 7.0, < 8.0",
-                "squizlabs/php_codesniffer": "~3.2",
-                "vladahejda/phpunit-assert-exception": "dev-master"
-            },
-            "default-branch": true,
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Dimsh\\React\\Filesystem\\Monitor\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Abdulrahman Dimashki",
-                    "email": "idimsh@gmail.com"
-                }
-            ],
-            "description": "A wrapper library around PHP Inotify Extension and React PHP to monitor files/directories for 3 main events: Create, Modify, Delete",
-            "homepage": "https://github.com/idimsh/php-inotify-monitor",
-            "keywords": [
-                "filesystem",
-                "inotify",
-                "monitor",
-                "php",
-                "react"
-            ],
-            "support": {
-                "issues": "https://github.com/idimsh/php-inotify-monitor/issues",
-                "source": "https://github.com/idimsh/php-inotify-monitor/tree/master"
-            },
-            "time": "2018-11-30T01:22:33+00:00"
         },
         {
             "name": "mkraemer/react-inotify",
@@ -2086,9 +2031,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "idimsh/php-inotify-monitor": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
